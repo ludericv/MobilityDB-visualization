@@ -19,3 +19,13 @@ The goal is to be able to display MobilityDB data using QGIS, for example, movin
 The data set used for the experiments is a table of 100 rows that each contain the information of the trajectory of a single point. Each row is divided into several columns. Several columns contain non-spatial information (e.g. a unique identifier). One column stores the spatio-temporal information of each point (i.e. its trajectory) as a tgeompoint. The goal is to interpolate each point's tgeompoint trajectory for every frame's timestamp of QGIS's temporal controller to create an animation.
 
 ## Solutions
+### Using the Temporal Controller
+Let's first describe how the temporal controller is useful. We can manually set a start time, an end time, the time between each frame (step) and the framerate. What we want to do now is to be able to draw the points from the database whose trajectory intersects (in the temporal dimension) the time range of the current animation frame for any frame. From the current knowledge I have, there is only one way to detect when the temporal controller goes to a new frame : by connecting a slot to the updateTemporalRange() signal. See the following script :
+```python
+temporalController = iface.mapCanvas().temporalController()
+
+def newFrame(range):
+    ### Do something clever here
+    
+temporalController.updateTemporalRange.connect(newFrame)
+```
