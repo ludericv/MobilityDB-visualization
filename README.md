@@ -1,2 +1,7 @@
-# MobilityDB-visualization
-Contains useful files and scripts to track the best solution for the project
+# Visualizing MobilityDB data using QGIS
+This document will go over the possible solutions to display MobilityDB data types using the QGIS application.
+
+## QGIS high level description
+
+
+
