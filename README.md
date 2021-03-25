@@ -8,7 +8,7 @@ QGIS data is displayed inside layers. The actual data can be stored in different
 - The data is stored inside the layer's memory. Data is organized as *features*.
 
 ### Features
-Features are the way data are represented inside a memory layer. Features have a geometry and attributes. The attributes contain information about the data that isn't displayed (e.g. a name, a time, an number such as an age) but can be used to filter which features should be rendered inside the layer or how they should be rendered (for example changing their size or color).
+Features are the way data are represented inside a memory layer. Features have a geometry and attributes. The attributes contain information about the data that isn't displayed (e.g. a name, a time, a number such as an age) but can be used to filter which features should be rendered inside the layer or how they should be rendered (for example changing their size or color).
 
 ## Problem description
 
