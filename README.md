@@ -37,3 +37,11 @@ We can do the interpolation for a fixed amount of frames, N. If we want the anim
 
 ### On-the-fly interpolation
 We could do the interpolation every time the _onNewFrame_ function is called. Again, the animation will only be smooth if execution_time < 1/FPS. Here, features need not store an attribute with the time of the interpolation since only features from the current frame are part of the layer (either the features are deleted and created at every frame, or the geometry of a fixed 100 features is changed every tick).
+
+## Experiments
+There are now two main questions :
+- Should frames be buffered ?
+- How should the interpolation be done ? The goal is to make it as efficient as possible since in any case (buffering or not), the execution time needs to be under a certain threshold.
+The following experiments attempt to compare different possible solutions
+
+### Experiment 1
