@@ -24,8 +24,17 @@ Let's first describe how the temporal controller is useful. We can manually set 
 ```python
 temporalController = iface.mapCanvas().temporalController()
 
-def newFrame(range):
+def onNewFrame(range):
     ### Do something clever here
     
 temporalController.updateTemporalRange.connect(newFrame)
 ```
+The _onNewFrame_ function is called whenever the temporal controller changes its temporal range, i.e. whenever a new frame needs to be drawn. The range parameter the function receives is the frame's temporal range (begin and end times can be retrieved by calling range.begin() and range.end()). 
+The interpolation from a point's trajectory to its location at a single instant (e.g. the beginning, middle, or end of the frame) will need to be done inside this function.
+
+From this we can see two main ways of doing things.
+#### Buffering frames
+We can do the interpolation for a fixed amount of frames, N. If we want the animation to be completely smooth, the execution of interpolation of the points for these N frames needs to be less than the time it takes for the N frames to be rendered (execution time < N/FPS)
+
+#### On-the-fly interpolation
+We could do the interpolation every time the _onNewFrame_ function is called. Again, the animation will only be smooth if execution_time < 1/FPS.
