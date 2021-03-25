@@ -8,7 +8,7 @@ QGIS data is displayed inside layers. The actual data can be stored in different
 - The data is stored inside the layer's memory. Data is organized as *features*.
 
 ### Features
-Features are the way data are represented inside a memory layer. Features have a geometry and attributes. The attributes contain information about the data that isn't displayed (e.g. a name, a time, a number such as an age) but can be used to filter which features should be rendered inside the layer or how they should be rendered (for example changing their size or color).
+Features are the way data are represented inside a memory layer. Features have a geometry and attributes. The attributes contain information about the data that isn't displayed (e.g. a name, a time, a number such as an age) but can be used to filter which features should be rendered inside the layer or how they should be rendered (for example changing their size or color). The geometry contains all of the information needed to be able to locate the feature on a map (e.g. its coordinates if the feature is a point).
 
 ## Problem description
 
@@ -42,6 +42,6 @@ We could do the interpolation every time the _onNewFrame_ function is called. Ag
 There are now two main questions :
 - Should frames be buffered ?
 - How should the interpolation be done ? The goal is to make it as efficient as possible since in any case (buffering or not), the execution time needs to be under a certain threshold.
+- 
 The following experiments attempt to compare different possible solutions
-
 ### Experiment 1
