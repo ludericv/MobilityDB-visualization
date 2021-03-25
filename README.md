@@ -42,6 +42,6 @@ We could do the interpolation every time the _onNewFrame_ function is called. Ag
 There are now two main questions :
 - Should frames be buffered ?
 - How should the interpolation be done ? The goal is to make it as efficient as possible since in any case (buffering or not), the execution time needs to be under a certain threshold.
-- 
+
 The following experiments attempt to compare different possible solutions
 ### Experiment 1
