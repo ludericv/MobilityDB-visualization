@@ -51,7 +51,7 @@ The following experiments attempt to compare different possible solutions
 
 There are two main ways to do the interpolation. We can either directly run a query on the database (using the postgisexecuteandloadsql qgis algorithm) or use the mobilitydb python driver (we query the database and get mobilitydb python types on which we can do the interpolation using the driver functions). Let's establish the baseline cost to generate/update features for a single frame using each method.
 
-#### Experiment 1.1
+#### Experiment 1.1: On-the-fly with driver
 Let's first measure the time it takes to update the geometry of 100 features using the mobilitydb driver.
 ```python
 import time
@@ -62,8 +62,6 @@ currentFrameNumber = temporalController.currentFrameNumber()
 features_list = []
 interpolation_times = []
 feature_times = []
-
-# For every frame, use  mobility driver to retrieve valueAtTimestamp(frameTime) and create a corresponding feature
 
 dtrange = temporalController.dateTimeRangeForFrameNumber(currentFrameNumber)
 for row in rows:
@@ -91,7 +89,6 @@ print("Interpolation:", sum(interpolation_times), "s.") # Time to do the interpo
 print("Feature manipulation:", sum(feature_times), "s.")
 print("Number of features generated:", len(features_list))
 ```
-
 Running this script for two different frames we obtain the following results  :
 ```
 Total time: 0.07577347755432129 s.
@@ -106,4 +103,55 @@ Editing time: 0.04535698890686035 s.
 Interpolation: 0.06148695945739746 s.
 Feature manipulation: 0.0013802051544189453 s.
 Number of features generated: 24
+```
+We can see that the interpolation time doesn't change much with the number of features generated. This is expected since interpolation is done on 100 features in any case, even if only a quarter (or tenth) actually yield a non-null result.
+On the other hand, we can see the editing time (i.e. time to add features to the map) also logically increases with the number of features to be added to the layer.
+
+By extrapolating these results, we can conclude that if this script was run at each frame (on-the-fly interpolation), the maximum framerate that could be achieved would be around 10 FPS.
+
+#### Experiment 1.2: Buffering with driver
+By modifying the last script slightly, we can try to generate features for the next FRAMES_NB frames and measure the performance.
+```python
+## Populate a layer stored in variable 'vlayer' with features using rows stored in variable 'rows'
+## MAKE SURE to run import_rows_to_memory_using_driver.py and create_temporal_layer.py before
+## running this script
+import time
+now = time.time()
+FRAMES_NB = 50 # Number of frames to generate
+
+canvas = iface.mapCanvas()
+temporalController = canvas.temporalController()
+currentFrameNumber = temporalController.currentFrameNumber()
+features_list = []
+interpolation_times = []
+feature_times = []
+
+# For every frame, use  mobility driver to retrieve valueAtTimestamp(frameTime) and create a corresponding feature
+for i in range(FRAMES_NB):
+    dtrange = temporalController.dateTimeRangeForFrameNumber(currentFrameNumber+i)
+    for row in rows:
+        now2 = time.time()
+        val = row[0].valueAtTimestamp(dtrange.begin().toPyDateTime().replace(tzinfo=row[0].startTimestamp.tzinfo)) # Get interpolation
+        interpolation_times.append(time.time()-now2)
+        if val: # If interpolation succeeds
+            now3 = time.time()
+            feat = QgsFeature(vlayer.fields())   # Create feature
+            feat.setAttributes([dtrange.end()])  # Set its attributes
+            geom = QgsGeometry.fromPointXY(QgsPointXY(val[0],val[1])) # Create geometry from valueAtTimestamp
+            feat.setGeometry(geom) # Set its geometry
+            feature_times.append(time.time()-now3)
+            features_list.append(feat)
+        
+now4 = time.time()
+vlayer.startEditing()
+vlayer.addFeatures(features_list) # Add list of features to vlayer
+vlayer.commitChanges()
+iface.vectorLayerTools().stopEditing(vlayer)
+now5 = time.time()
+
+print("Total time:", time.time()-now, "s.")
+print("Editing time:", now5-now4, "s.") # Time to add features to the map
+print("Interpolation:", sum(interpolation_times), "s.") # Time to
+print("Feature manipulation:", sum(feature_times), "s.")
+print("Number of features generated:", len(features_list))
 ```
