@@ -65,7 +65,7 @@ feature_times = []
 
 # For every frame, use  mobility driver to retrieve valueAtTimestamp(frameTime) and create a corresponding feature
 
-dtrange = temporalController.dateTimeRangeForFrameNumber(currentFrameNumber+i)
+dtrange = temporalController.dateTimeRangeForFrameNumber(currentFrameNumber)
 for row in rows:
     now2 = time.time()
     val = row[0].valueAtTimestamp(dtrange.begin().toPyDateTime().replace(tzinfo=row[0].startTimestamp.tzinfo)) # Get interpolation
@@ -78,6 +78,7 @@ for row in rows:
         feat.setGeometry(geom) # Set its geometry
         feature_times.append(time.time()-now3)
         features_list.append(feat)
+        
 now4 = time.time()
 vlayer.startEditing()
 vlayer.addFeatures(features_list) # Add list of features to vlayer
@@ -91,3 +92,18 @@ print("Feature manipulation:", sum(feature_times), "s.")
 print("Number of features generated:", len(features_list))
 ```
 
+Running this script for two different frames we obtain the following results  :
+```
+Total time: 0.07577347755432129 s.
+Editing time: 0.023220062255859375 s.
+Interpolation: 0.05182647705078125 s.
+Feature manipulation: 0.00048804283142089844 s.
+Number of features generated: 7
+```
+```
+Total time: 0.10847806930541992 s.
+Editing time: 0.04535698890686035 s.
+Interpolation: 0.06148695945739746 s.
+Feature manipulation: 0.0013802051544189453 s.
+Number of features generated: 24
+```
