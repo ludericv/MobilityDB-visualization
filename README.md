@@ -53,7 +53,7 @@ There are two main ways to do the interpolation. We can either directly run a qu
 
 #### Experiment 1.1
 Let's first measure the time it takes to update the geometry of 100 features using the mobilitydb driver.
-```
+```python
 import time
 now = time.time()
 canvas = iface.mapCanvas()
