@@ -151,7 +151,29 @@ now5 = time.time()
 
 print("Total time:", time.time()-now, "s.")
 print("Editing time:", now5-now4, "s.") # Time to add features to the map
-print("Interpolation:", sum(interpolation_times), "s.") # Time to
+print("Interpolation:", sum(interpolation_times), "s.")
 print("Feature manipulation:", sum(feature_times), "s.")
 print("Number of features generated:", len(features_list))
 ```
+Running this script with FRAMES_NB=50 at two different start frames we obtain the following results  :
+```
+Total time: 4.051093339920044 s.
+Editing time: 1.458411693572998 s.
+Interpolation: 2.5336971282958984 s.
+Feature manipulation: 0.048734426498413086 s.
+Number of features generated: 1151
+```
+```
+Total time: 2.549457311630249 s.
+Editing time: 0.48203563690185547 s.
+Interpolation: 2.041699171066284 s.
+Feature manipulation: 0.01581597328186035 s.
+Number of features generated: 369
+```
+We can see that the interpolation time doesn't change much even though the number of features generated is very different. This is expected since the valueAtTimestamp() function from the driver is called 5000 times in both cases regardless of its return value. The editing time seems to be proportional to the number of features that are effectively added to the map. All in all, if we consider running this script takes between 3 and 4 seconds to generate 50 frames, the framerate's theoretical cap would be around 15 FPS, which isn't much better than on-the-fly interpolation.
+
+#### Remarks
+These experiments measure the performance of running the interpolation on the data and displaying features on the canvas. It is assumed that the trajectories for 100 rows have already been queried and stored in memory. Depending on how the query is performed (it could be advantageous to only store a small segment of the trajectory inside memory), this would also take time and be needed for an "in real time" animation. The theoritecal framerates obtained for both experiments are thus upper bounds on the final performance.
+
+### Experiment 2
+Let's now try to query the interpolation of the trajectory directly from the database (i.e. without using the mobilitydb python driver)
