@@ -177,7 +177,7 @@ These experiments measure the performance of running the interpolation on the da
 
 ### Experiment 2
 Let's now try to query the interpolation of the trajectory directly from the database (i.e. without using the mobilitydb python driver). We can do so using the postgisexecuteandloadsql algorithm, which allows us to obtain a layer with features directly.
-```python3
+```python
 import processing
 import time
 
@@ -254,4 +254,119 @@ We can see performance here also seems to be capped at around 15 FPS.
 Due to an unknown bug, features that are generated using the algorithm don't actually show on the map unless the temporal controller is turned off, which makes it impossible to use unless the bug can be fixed.
 
 ### Experiment 3
+Let's revisit experiment 1, but this time, instead of storing the whole tgeompoint column from the database into memory, let's only store the part needed to do the interpolation for the next 50 frames.
+```python
+## Import rows of mobilitydb table into a 'rows' variable
+import psycopg2
+import time
+from mobilitydb.psycopg import register
 
+canvas = iface.mapCanvas()
+temporalController = canvas.temporalController()
+currentFrameNumber = temporalController.currentFrameNumber()
+FRAMES_NB = 1
+connection = None
+now = time.time()
+
+try:
+    # Set the connection parameters to PostgreSQL
+    connection = psycopg2.connect(host='localhost', database='postgres', user='postgres', password='postgres')
+    connection.autocommit = True
+
+    # Register MobilityDB data types
+    register(connection)
+
+    # Open a cursor to perform database operations
+    cursor = connection.cursor()
+
+    # Query the database and obtain data as Python objects
+    
+    dt1 = temporalController.dateTimeRangeForFrameNumber(currentFrameNumber).begin().toString("yyyy-MM-dd HH:mm:ss")
+    dt2 = temporalController.dateTimeRangeForFrameNumber(currentFrameNumber+FRAMES_NB-1).begin().toString("yyyy-MM-dd HH:mm:ss")
+    select_query = "select atPeriod(trip, period('"+dt1+"', '"+dt2+"', true, true)) from trips"
+    #select_query = "SELECT valueAtTimestamp(trip, '"+range.end().toString("yyyy-MM-dd HH:mm:ss-04")+"') FROM trips_test"
+    
+    cursor.execute(select_query)
+    rows = cursor.fetchall()
+    print("Query execution time:", time.time()-now)
+
+
+except (Exception, psycopg2.Error) as error:
+    print("Error while connecting to PostgreSQL", error)
+
+finally:
+    # Close the connection
+    if connection:
+        connection.close()
+features_list = []
+interpolation_times = []
+feature_times = []
+
+# For every frame, use  mobility driver to retrieve valueAtTimestamp(frameTime) and create a corresponding feature
+for i in range(FRAMES_NB):
+    dtrange = temporalController.dateTimeRangeForFrameNumber(currentFrameNumber+i)
+    for row in rows:
+        now2 = time.time()
+        val = None
+        if row[0]:
+            val = row[0].valueAtTimestamp(dtrange.begin().toPyDateTime().replace(tzinfo=row[0].startTimestamp.tzinfo)) # Get interpolation
+        interpolation_times.append(time.time()-now2)
+        if val: # If interpolation succeeds
+            now3 = time.time()
+            feat = QgsFeature(vlayer.fields())   # Create feature
+            feat.setAttributes([dtrange.end()])  # Set its attributes
+            geom = QgsGeometry.fromPointXY(QgsPointXY(val[0],val[1])) # Create geometry from valueAtTimestamp
+            feat.setGeometry(geom) # Set its geometry
+            feature_times.append(time.time()-now3)
+            features_list.append(feat)
+        
+now4 = time.time()
+vlayer.startEditing()
+vlayer.addFeatures(features_list) # Add list of features to vlayer
+vlayer.commitChanges()
+iface.vectorLayerTools().stopEditing(vlayer)
+now5 = time.time()
+
+print("Total time:", time.time()-now, "s.")
+print("Editing time:", now5-now4, "s.") # Time to add features to the map
+print("Interpolation:", sum(interpolation_times), "s.") 
+print("Feature manipulation:", sum(feature_times), "s.")
+print("Number of features generated:", len(features_list))
+```
+Experiment 3.1: On-the-fly
+Running this with NB_FRAMES=1 outputs the following:
+```
+Total time: 1.1713242530822754 s.
+Query execution time: 1.0490577220916748
+Total time without connection: 0.06578540802001953 s.
+Editing time: 0.06384944915771484 s.
+Interpolation: 0.0006940364837646484 s.
+Feature manipulation: 0.0009610652923583984 s.
+Number of features generated: 24
+```
+We can see that the interpolation time is very small. Outside of the time for the query to be executed and the connection to be established (which don't need to be done each frame), the performance is capped by the editing time. We can see that the total time without connection is ~0.065 seconds which would result in a framerate around 15 FPS.
+
+####Experiment 3.2: Buffering
+Let's now generate the features for all 50 frames of the period
+```
+Total time: 3.0664803981781006 s.
+Query execution time: 1.0994305610656738
+Total time without connection: 1.9227006435394287 s.
+Editing time: 1.6872003078460693 s.
+Interpolation: 0.16837859153747559 s.
+Feature manipulation: 0.05574917793273926 s.
+Number of features generated: 1204
+```
+We can see that the interpolation time is still very low. The main time consumption is due to the addition of the features to the layer and the time to run the query (which we now need to take into account). This brings us to a time of around 2.8 seconds to generate 50 frames, or ~18 FPS.
+
+## Summary
+Experiment|FPS cap|Remarks
+----------|-------|-------
+1 No buffer|10|The query result is assumed to be stored whole in memory
+1 Buffer|15|
+------|-------|-------
+2 No buffer|10|Due to a bug, features don't actually show
+2 Buffer|15|
+------|-------|-------
+3 No buffer|15|/
+3 Buffer|18|
