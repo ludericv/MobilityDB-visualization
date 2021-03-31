@@ -176,4 +176,82 @@ We can see that the interpolation time doesn't change much even though the numbe
 These experiments measure the performance of running the interpolation on the data and displaying features on the canvas. It is assumed that the trajectories for 100 rows have already been queried and stored in memory. Depending on how the query is performed (it could be advantageous to only store a small segment of the trajectory inside memory), this would also take time and be needed for an "in real time" animation. The theoritecal framerates obtained for both experiments are thus upper bounds on the final performance.
 
 ### Experiment 2
-Let's now try to query the interpolation of the trajectory directly from the database (i.e. without using the mobilitydb python driver)
+Let's now try to query the interpolation of the trajectory directly from the database (i.e. without using the mobilitydb python driver). We can do so using the postgisexecuteandloadsql algorithm, which allows us to obtain a layer with features directly.
+```python3
+import processing
+import time
+
+FRAMES_NB = 1
+temporalController = iface.mapCanvas().temporalController()
+frame = temporalController.currentFrameNumber()
+datetime=temporalController.dateTimeRangeForFrameNumber(frame).begin()
+processing_times = []
+add_features_times = []
+
+# Processing algorithm parameters
+parameters = { 'DATABASE' : "postgres", # Enter name of database to query
+'SQL' : "",
+'ID_FIELD' : 'id'
+}
+
+# Setup resulting vector layer
+vlayer = QgsVectorLayer("Point", "points_4", "memory")
+pr = vlayer.dataProvider()
+pr.addAttributes([QgsField("id", QVariant.Int), QgsField("time", QVariant.DateTime)])
+vlayer.updateFields()
+tp = vlayer.temporalProperties()
+tp.setIsActive(True)
+tp.setMode(1)  # Single field with datetime
+tp.setStartField("time")
+vlayer.updateFields()
+vlayer.startEditing()
+
+# Populate vector layer with features at beginning time of every frame
+now = time.time()
+for i in range(FRAMES_NB):
+    datetime=temporalController.dateTimeRangeForFrameNumber(frame+i).end()
+    sql = "SELECT ROW_NUMBER() OVER() as id, '"+datetime.toString("yyyy-MM-dd HH:mm:ss")+"' as time, valueAtTimestamp(trip, '"+datetime.toString("yyyy-MM-dd HH:mm:ss")+"') as geom FROM trips"
+    parameters['SQL'] = sql # Update algorithm parameters with sql query
+    now = time.time()
+    output = processing.run("qgis:postgisexecuteandloadsql", parameters) # Algorithm returns a layer containing the features, layer can be accessed by output['OUTPUT']
+    now2 = time.time()
+    processing_times.append(now2-now)
+    vlayer.addFeatures(list(output['OUTPUT'].getFeatures())) # Add features from algorithm output layer to result layer
+    add_features_times.append(time.time()-now2)
+    
+vlayer.commitChanges()
+iface.vectorLayerTools().stopEditing(vlayer)
+
+# Add result layer to project
+QgsProject.instance().addMapLayer(vlayer)
+print("Processing times : " + str(sum(processing_times)))
+print("Add features times : " + str(sum(add_features_times)))
+print("Total time : " + str(sum(processing_times)+sum(add_features_times)))
+```
+#### Experiment 2.1: On-the-fly interpolation
+Running the previous script with FRAMES_NB=1 yields the following result:
+```
+Processing times : 0.07295393943786621
+Add features times : 0.046048641204833984
+Total time : 0.1190025806427002
+```
+Again we can see that we wouldn't be able to run the animation at more than 10 FPS.
+
+#### Experiment 2.2: Buffering
+Running the script with FRAMES_NB=50 and FRAMES_NB=200 gives the following:
+```
+Processing times : 2.367760419845581
+Add features times : 0.9431586265563965
+Total time : 3.3109190464019775
+```
+```
+Processing times : 8.728699445724487
+Add features times : 3.4965109825134277
+Total time : 12.225210428237915
+```
+We can see performance here also seems to be capped at around 15 FPS.
+#### Remarks
+Due to an unknown bug, features that are generated using the algorithm don't actually show on the map unless the temporal controller is turned off, which makes it impossible to use unless the bug can be fixed.
+
+### Experiment 3
+
