@@ -333,7 +333,7 @@ print("Interpolation:", sum(interpolation_times), "s.")
 print("Feature manipulation:", sum(feature_times), "s.")
 print("Number of features generated:", len(features_list))
 ```
-Experiment 3.1: On-the-fly
+#### Experiment 3.1: On-the-fly
 Running this with NB_FRAMES=1 outputs the following:
 ```
 Total time: 1.1713242530822754 s.
@@ -346,7 +346,7 @@ Number of features generated: 24
 ```
 We can see that the interpolation time is very small. Outside of the time for the query to be executed and the connection to be established (which don't need to be done each frame), the performance is capped by the editing time. We can see that the total time without connection is ~0.065 seconds which would result in a framerate around 15 FPS.
 
-####Experiment 3.2: Buffering
+#### Experiment 3.2: Buffering
 Let's now generate the features for all 50 frames of the period
 ```
 Total time: 3.0664803981781006 s.
