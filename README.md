@@ -364,9 +364,7 @@ Experiment|FPS cap|Remarks
 ----------|-------|-------
 1 No buffer|10|The query result is assumed to be stored whole in memory
 1 Buffer|15|
-------|-------|-------
 2 No buffer|10|Due to a bug, features don't actually show
 2 Buffer|15|
-------|-------|-------
 3 No buffer|15|/
 3 Buffer|18|
