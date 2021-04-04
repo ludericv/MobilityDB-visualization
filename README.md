@@ -167,6 +167,7 @@ These experiments measure the performance of running the interpolation on the da
 
 ### Experiment 2
 Let's now try to query the interpolation of the trajectory directly from the database (i.e. without using the mobilitydb python driver). We can do so using the postgisexecuteandloadsql algorithm, which allows us to obtain a layer with features directly.
+![Experiment2](https://user-images.githubusercontent.com/49359624/113512562-7d382880-9565-11eb-9427-6293224c3162.png)
 ```python
 import processing
 import time
