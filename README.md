@@ -43,9 +43,9 @@ There are two steps to this experiment:
 1. A one-time query to the database to retrieve the trajectories and store them in memory. This takes some time but we don't take it into account since it is a one-time operation.
 2. The interpolation and addition of the interpolated values to add to the layer. This is done every **N**th frame, where **N** is the number of frames that are buffered (**N**=1 means no buffering). Here, there are two main time sinks, the time for the driver to do the interpolation and the time to add the features to the layer.
 
-The script used for this experiment can be found [here](#experiment-1-1). 
+For easier measurements, we will simply simulate what a call of onNewFrame() would trigger in [this](#experiment-1-1) script. 
 
-Running this script for two different frames we obtain the following results  :
+Running the script at two different times for 1 frame we obtain the following results  :
 ```
 Total time: 0.07577347755432129 s.
 Editing time: 0.023220062255859375 s.
@@ -86,59 +86,10 @@ We can see that the interpolation time doesn't change much even though the numbe
 These experiments measure the performance of running the interpolation on the data and displaying features on the canvas. It is assumed that the trajectories for 100 rows have already been queried and stored in memory. Depending on how the query is performed (it could be advantageous to only store a small segment of the trajectory inside memory), this would also take time and be needed for an "in real time" animation. The theoritecal framerates obtained for both experiments are thus upper bounds on the final performance.
 
 ### Experiment 2
-Let's now try to query the interpolation of the trajectory directly from the database (i.e. without using the mobilitydb python driver). We can do so using the postgisexecuteandloadsql algorithm, which allows us to obtain a layer with features directly.
+In this experiment, we try to query the interpolation of the trajectory directly from the database (i.e. without using the mobilitydb python driver). We can do so using the postgisexecuteandloadsql algorithm, which allows us to obtain a layer with features directly.
 ![Experiment2](https://user-images.githubusercontent.com/49359624/113512562-7d382880-9565-11eb-9427-6293224c3162.png)
-```python
-import processing
-import time
 
-FRAMES_NB = 1
-temporalController = iface.mapCanvas().temporalController()
-frame = temporalController.currentFrameNumber()
-datetime=temporalController.dateTimeRangeForFrameNumber(frame).begin()
-processing_times = []
-add_features_times = []
-
-# Processing algorithm parameters
-parameters = { 'DATABASE' : "postgres", # Enter name of database to query
-'SQL' : "",
-'ID_FIELD' : 'id'
-}
-
-# Setup resulting vector layer
-vlayer = QgsVectorLayer("Point", "points_4", "memory")
-pr = vlayer.dataProvider()
-pr.addAttributes([QgsField("id", QVariant.Int), QgsField("time", QVariant.DateTime)])
-vlayer.updateFields()
-tp = vlayer.temporalProperties()
-tp.setIsActive(True)
-tp.setMode(1)  # Single field with datetime
-tp.setStartField("time")
-vlayer.updateFields()
-vlayer.startEditing()
-
-# Populate vector layer with features at beginning time of every frame
-now = time.time()
-for i in range(FRAMES_NB):
-    datetime=temporalController.dateTimeRangeForFrameNumber(frame+i).end()
-    sql = "SELECT ROW_NUMBER() OVER() as id, '"+datetime.toString("yyyy-MM-dd HH:mm:ss")+"' as time, valueAtTimestamp(trip, '"+datetime.toString("yyyy-MM-dd HH:mm:ss")+"') as geom FROM trips"
-    parameters['SQL'] = sql # Update algorithm parameters with sql query
-    now = time.time()
-    output = processing.run("qgis:postgisexecuteandloadsql", parameters) # Algorithm returns a layer containing the features, layer can be accessed by output['OUTPUT']
-    now2 = time.time()
-    processing_times.append(now2-now)
-    vlayer.addFeatures(list(output['OUTPUT'].getFeatures())) # Add features from algorithm output layer to result layer
-    add_features_times.append(time.time()-now2)
-    
-vlayer.commitChanges()
-iface.vectorLayerTools().stopEditing(vlayer)
-
-# Add result layer to project
-QgsProject.instance().addMapLayer(vlayer)
-print("Processing times : " + str(sum(processing_times)))
-print("Add features times : " + str(sum(add_features_times)))
-print("Total time : " + str(sum(processing_times)+sum(add_features_times)))
-```
+Again, we will simulate a call of onNewFrame() in [this](experiment-2-1) script.
 #### Experiment 2.1: On-the-fly interpolation
 Running the previous script with FRAMES_NB=1 yields the following result:
 ```
@@ -325,3 +276,58 @@ print("Interpolation:", sum(interpolation_times), "s.")
 print("Feature manipulation:", sum(feature_times), "s.")
 print("Number of features generated:", len(features_list))
 ```
+[Back to experiment 1](experiment-1)
+
+### Experiment 2
+```python
+import processing
+import time
+
+FRAMES_NB = 1
+temporalController = iface.mapCanvas().temporalController()
+frame = temporalController.currentFrameNumber()
+datetime=temporalController.dateTimeRangeForFrameNumber(frame).begin()
+processing_times = []
+add_features_times = []
+
+# Processing algorithm parameters
+parameters = { 'DATABASE' : "postgres", # Enter name of database to query
+'SQL' : "",
+'ID_FIELD' : 'id'
+}
+
+# Setup resulting vector layer
+vlayer = QgsVectorLayer("Point", "points_4", "memory")
+pr = vlayer.dataProvider()
+pr.addAttributes([QgsField("id", QVariant.Int), QgsField("time", QVariant.DateTime)])
+vlayer.updateFields()
+tp = vlayer.temporalProperties()
+tp.setIsActive(True)
+tp.setMode(1)  # Single field with datetime
+tp.setStartField("time")
+vlayer.updateFields()
+vlayer.startEditing()
+
+# Populate vector layer with features at beginning time of every frame
+now = time.time()
+for i in range(FRAMES_NB):
+    datetime=temporalController.dateTimeRangeForFrameNumber(frame+i).end()
+    sql = "SELECT ROW_NUMBER() OVER() as id, '"+datetime.toString("yyyy-MM-dd HH:mm:ss")+"' as time, valueAtTimestamp(trip, '"+datetime.toString("yyyy-MM-dd HH:mm:ss")+"') as geom FROM trips"
+    parameters['SQL'] = sql # Update algorithm parameters with sql query
+    now = time.time()
+    output = processing.run("qgis:postgisexecuteandloadsql", parameters) # Algorithm returns a layer containing the features, layer can be accessed by output['OUTPUT']
+    now2 = time.time()
+    processing_times.append(now2-now)
+    vlayer.addFeatures(list(output['OUTPUT'].getFeatures())) # Add features from algorithm output layer to result layer
+    add_features_times.append(time.time()-now2)
+    
+vlayer.commitChanges()
+iface.vectorLayerTools().stopEditing(vlayer)
+
+# Add result layer to project
+QgsProject.instance().addMapLayer(vlayer)
+print("Processing times : " + str(sum(processing_times)))
+print("Add features times : " + str(sum(add_features_times)))
+print("Total time : " + str(sum(processing_times)+sum(add_features_times)))
+```
+[Back to experiment 2](experiment-2)
