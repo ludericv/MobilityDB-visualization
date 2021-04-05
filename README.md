@@ -365,7 +365,7 @@ Experiment|FPS cap|Remarks
 3 Buffer|18|
 
 ## Appendix
-### A Experiment 1
+### Experiment 1
 ```
 import
 ```
