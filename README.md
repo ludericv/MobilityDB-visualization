@@ -282,14 +282,13 @@ Experiment|FPS cap|Remarks
 
 ## Appendix
 ### Experiment 1
-```
+```python
 ## Populate a layer stored in variable 'vlayer' with features using rows stored in variable 'rows'
 ## MAKE SURE to run import_rows_to_memory_using_driver.py and create_temporal_layer.py before
 ## running this script
 import time
 now = time.time()
 FRAMES_NB = 50 # Number of frames to generate
-
 canvas = iface.mapCanvas()
 temporalController = canvas.temporalController()
 currentFrameNumber = temporalController.currentFrameNumber()
