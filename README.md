@@ -41,7 +41,7 @@ The following experiments attempt to compare different possible solutions
 ![Experiment1](https://user-images.githubusercontent.com/49359624/113512140-97710700-9563-11eb-9ea1-380f1228617a.png)
 There are two steps to this experiment:
 1. A one-time query to the database to retrieve the trajectories and store them in memory. This takes some time but we don't take it into account since it is a one-time operation.
-2. The interpolation and addition of the interpolated values to add to the layer. This is done every **N**th frame, where **N** is the number of frames that are buffered (**N**=1 means no buffering).
+2. The interpolation and addition of the interpolated values to add to the layer. This is done every **N**th frame, where **N** is the number of frames that are buffered (**N**=1 means no buffering). Here, there are two main time sinks, the time for the driver to do the interpolation and the time to add the features to the layer.
 
 #### Experiment 1.1: On-the-fly with driver
 Let's first measure the time it takes to update the geometry of 100 features using the mobilitydb driver.
