@@ -43,46 +43,8 @@ There are two steps to this experiment:
 1. A one-time query to the database to retrieve the trajectories and store them in memory. This takes some time but we don't take it into account since it is a one-time operation.
 2. The interpolation and addition of the interpolated values to add to the layer. This is done every **N**th frame, where **N** is the number of frames that are buffered (**N**=1 means no buffering). Here, there are two main time sinks, the time for the driver to do the interpolation and the time to add the features to the layer.
 
-[code](#a-experiment-1)
+The script used for this experiment can be found [here](#experiment-1-1). 
 
-#### Experiment 1.1: On-the-fly with driver
-Let's first measure the time it takes to update the geometry of 100 features using the mobilitydb driver.
-```python
-import time
-now = time.time()
-canvas = iface.mapCanvas()
-temporalController = canvas.temporalController()
-currentFrameNumber = temporalController.currentFrameNumber()
-features_list = []
-interpolation_times = []
-feature_times = []
-
-dtrange = temporalController.dateTimeRangeForFrameNumber(currentFrameNumber)
-for row in rows:
-    now2 = time.time()
-    val = row[0].valueAtTimestamp(dtrange.begin().toPyDateTime().replace(tzinfo=row[0].startTimestamp.tzinfo)) # Get interpolation
-    interpolation_times.append(time.time()-now2)
-    if val: # If interpolation succeeds
-        now3 = time.time()
-        feat = QgsFeature(vlayer.fields())   # Create feature
-        feat.setAttributes([dtrange.end()])  # Set its attributes
-        geom = QgsGeometry.fromPointXY(QgsPointXY(val[0],val[1])) # Create geometry from valueAtTimestamp
-        feat.setGeometry(geom) # Set its geometry
-        feature_times.append(time.time()-now3)
-        features_list.append(feat)
-        
-now4 = time.time()
-vlayer.startEditing()
-vlayer.addFeatures(features_list) # Add list of features to vlayer
-vlayer.commitChanges()
-iface.vectorLayerTools().stopEditing(vlayer)
-now5 = time.time()
-print("Total time:", time.time()-now)
-print("Editing time:", now5-now4) # Time to add features to the map
-print("Interpolation:", sum(interpolation_times), "s.") # Time to do the interpolation
-print("Feature manipulation:", sum(feature_times), "s.")
-print("Number of features generated:", len(features_list))
-```
 Running this script for two different frames we obtain the following results  :
 ```
 Total time: 0.07577347755432129 s.
@@ -103,52 +65,6 @@ On the other hand, we can see the editing time (i.e. time to add features to the
 
 By extrapolating these results, we can conclude that if this script was run at each frame (on-the-fly interpolation), the maximum framerate that could be achieved would be around 10 FPS.
 
-#### Experiment 1.2: Buffering with driver
-By modifying the last script slightly, we can try to generate features for the next FRAMES_NB frames and measure the performance.
-```python
-## Populate a layer stored in variable 'vlayer' with features using rows stored in variable 'rows'
-## MAKE SURE to run import_rows_to_memory_using_driver.py and create_temporal_layer.py before
-## running this script
-import time
-now = time.time()
-FRAMES_NB = 50 # Number of frames to generate
-
-canvas = iface.mapCanvas()
-temporalController = canvas.temporalController()
-currentFrameNumber = temporalController.currentFrameNumber()
-features_list = []
-interpolation_times = []
-feature_times = []
-
-# For every frame, use  mobility driver to retrieve valueAtTimestamp(frameTime) and create a corresponding feature
-for i in range(FRAMES_NB):
-    dtrange = temporalController.dateTimeRangeForFrameNumber(currentFrameNumber+i)
-    for row in rows:
-        now2 = time.time()
-        val = row[0].valueAtTimestamp(dtrange.begin().toPyDateTime().replace(tzinfo=row[0].startTimestamp.tzinfo)) # Get interpolation
-        interpolation_times.append(time.time()-now2)
-        if val: # If interpolation succeeds
-            now3 = time.time()
-            feat = QgsFeature(vlayer.fields())   # Create feature
-            feat.setAttributes([dtrange.end()])  # Set its attributes
-            geom = QgsGeometry.fromPointXY(QgsPointXY(val[0],val[1])) # Create geometry from valueAtTimestamp
-            feat.setGeometry(geom) # Set its geometry
-            feature_times.append(time.time()-now3)
-            features_list.append(feat)
-        
-now4 = time.time()
-vlayer.startEditing()
-vlayer.addFeatures(features_list) # Add list of features to vlayer
-vlayer.commitChanges()
-iface.vectorLayerTools().stopEditing(vlayer)
-now5 = time.time()
-
-print("Total time:", time.time()-now, "s.")
-print("Editing time:", now5-now4, "s.") # Time to add features to the map
-print("Interpolation:", sum(interpolation_times), "s.")
-print("Feature manipulation:", sum(feature_times), "s.")
-print("Number of features generated:", len(features_list))
-```
 Running this script with FRAMES_NB=50 at two different start frames we obtain the following results  :
 ```
 Total time: 4.051093339920044 s.
@@ -367,5 +283,46 @@ Experiment|FPS cap|Remarks
 ## Appendix
 ### Experiment 1
 ```
-import
+## Populate a layer stored in variable 'vlayer' with features using rows stored in variable 'rows'
+## MAKE SURE to run import_rows_to_memory_using_driver.py and create_temporal_layer.py before
+## running this script
+import time
+now = time.time()
+FRAMES_NB = 50 # Number of frames to generate
+
+canvas = iface.mapCanvas()
+temporalController = canvas.temporalController()
+currentFrameNumber = temporalController.currentFrameNumber()
+features_list = []
+interpolation_times = []
+feature_times = []
+
+# For every frame, use  mobility driver to retrieve valueAtTimestamp(frameTime) and create a corresponding feature
+for i in range(FRAMES_NB):
+    dtrange = temporalController.dateTimeRangeForFrameNumber(currentFrameNumber+i)
+    for row in rows:
+        now2 = time.time()
+        val = row[0].valueAtTimestamp(dtrange.begin().toPyDateTime().replace(tzinfo=row[0].startTimestamp.tzinfo)) # Get interpolation
+        interpolation_times.append(time.time()-now2)
+        if val: # If interpolation succeeds
+            now3 = time.time()
+            feat = QgsFeature(vlayer.fields())   # Create feature
+            feat.setAttributes([dtrange.end()])  # Set its attributes
+            geom = QgsGeometry.fromPointXY(QgsPointXY(val[0],val[1])) # Create geometry from valueAtTimestamp
+            feat.setGeometry(geom) # Set its geometry
+            feature_times.append(time.time()-now3)
+            features_list.append(feat)
+        
+now4 = time.time()
+vlayer.startEditing()
+vlayer.addFeatures(features_list) # Add list of features to vlayer
+vlayer.commitChanges()
+iface.vectorLayerTools().stopEditing(vlayer)
+now5 = time.time()
+
+print("Total time:", time.time()-now, "s.")
+print("Editing time:", now5-now4, "s.") # Time to add features to the map
+print("Interpolation:", sum(interpolation_times), "s.")
+print("Feature manipulation:", sum(feature_times), "s.")
+print("Number of features generated:", len(features_list))
 ```
