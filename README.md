@@ -43,6 +43,8 @@ There are two steps to this experiment:
 1. A one-time query to the database to retrieve the trajectories and store them in memory. This takes some time but we don't take it into account since it is a one-time operation.
 2. The interpolation and addition of the interpolated values to add to the layer. This is done every **N**th frame, where **N** is the number of frames that are buffered (**N**=1 means no buffering). Here, there are two main time sinks, the time for the driver to do the interpolation and the time to add the features to the layer.
 
+[code](#appendix)
+
 #### Experiment 1.1: On-the-fly with driver
 Let's first measure the time it takes to update the geometry of 100 features using the mobilitydb driver.
 ```python
@@ -361,3 +363,9 @@ Experiment|FPS cap|Remarks
 2 Buffer|15|
 3 No buffer|15|/
 3 Buffer|18|
+
+## Appendix
+### Experiment 1
+```
+import
+```
