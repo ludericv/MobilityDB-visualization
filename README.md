@@ -17,7 +17,7 @@ temporalController = iface.mapCanvas().temporalController()
 def onNewFrame(range):
     ### Do something clever here
     
-temporalController.updateTemporalRange.connect(newFrame)
+temporalController.updateTemporalRange.connect(onNewFrame)
 ```
 The _onNewFrame_ function is called whenever the temporal controller changes its temporal range, i.e. whenever a new frame needs to be drawn. The range parameter the function receives is the frame's temporal range (begin and end times can be retrieved by calling range.begin() and range.end()). 
 The interpolation from a point's trajectory to its location at a single instant (e.g. the beginning, middle, or end of the frame) will need to be done inside this function.
