@@ -48,16 +48,14 @@ For easier measurements, we will simply simulate what a call of onNewFrame() wou
 Running the script at two different times for 1 frame we obtain the following results  :
 ```
 Total time: 0.07577347755432129 s.
-Editing time: 0.023220062255859375 s.
+Add features time: 0.023220062255859375 s.
 Interpolation: 0.05182647705078125 s.
-Feature manipulation: 0.00048804283142089844 s.
 Number of features generated: 7
 ```
 ```
 Total time: 0.10847806930541992 s.
-Editing time: 0.04535698890686035 s.
+Add features time: 0.04535698890686035 s.
 Interpolation: 0.06148695945739746 s.
-Feature manipulation: 0.0013802051544189453 s.
 Number of features generated: 24
 ```
 We can see that the interpolation time doesn't change much with the number of features generated. This is expected since interpolation is done on 100 features in any case, even if only a quarter (or tenth) actually yield a non-null result.
@@ -68,16 +66,14 @@ By extrapolating these results, we can conclude that if this script was run at e
 Running this script with FRAMES_NB=50 at two different start frames we obtain the following results  :
 ```
 Total time: 4.051093339920044 s.
-Editing time: 1.458411693572998 s.
+Add features time: 1.458411693572998 s.
 Interpolation: 2.5336971282958984 s.
-Feature manipulation: 0.048734426498413086 s.
 Number of features generated: 1151
 ```
 ```
 Total time: 2.549457311630249 s.
-Editing time: 0.48203563690185547 s.
+Add features time: 0.48203563690185547 s.
 Interpolation: 2.041699171066284 s.
-Feature manipulation: 0.01581597328186035 s.
 Number of features generated: 369
 ```
 We can see that the interpolation time doesn't change much even though the number of features generated is very different. This is expected since the valueAtTimestamp() function from the driver is called 5000 times in both cases regardless of its return value. The editing time seems to be proportional to the number of features that are effectively added to the map. All in all, if we consider running this script takes between 3 and 4 seconds to generate 50 frames, the framerate's theoretical cap would be around 15 FPS, which isn't much better than on-the-fly interpolation.
@@ -128,7 +124,7 @@ The script for this experiment can be found [here](#experiment-3-1)
 Running this with NB_FRAMES=1 outputs the following:
 ```
 Total time: 1.1713242530822754 s.
-Editing time: 0.06384944915771484 s.
+Add features time: 0.06384944915771484 s.
 Interpolation: 0.0006940364837646484 s.
 Number of features generated: 24
 ```
@@ -139,7 +135,7 @@ Let's now generate the features for all 50 frames of the period
 Total time: 3.0664803981781006 s.
 Query execution time: 1.0994305610656738
 Total time without connection and query: 1.9227006435394287 s.
-Editing time: 1.6872003078460693 s.
+Add features time: 1.6872003078460693 s.
 Interpolation: 0.16837859153747559 s.
 Number of features generated: 1204
 ```
@@ -195,9 +191,8 @@ iface.vectorLayerTools().stopEditing(vlayer)
 now5 = time.time()
 
 print("Total time:", time.time()-now, "s.")
-print("Editing time:", now5-now4, "s.") # Time to add features to the map
+print("Add features time:", now5-now4, "s.") # Time to add features to the map
 print("Interpolation:", sum(interpolation_times), "s.")
-print("Feature manipulation:", sum(feature_times), "s.")
 print("Number of features generated:", len(features_list))
 ```
 [Back to experiment 1](#experiment-1)
@@ -330,7 +325,7 @@ iface.vectorLayerTools().stopEditing(vlayer)
 now5 = time.time()
 
 print("Total time:", time.time()-now, "s.")
-print("Editing time:", now5-now4, "s.") # Time to add features to the map
+print("Add features time:", now5-now4, "s.") # Time to add features to the map
 print("Interpolation:", sum(interpolation_times), "s.") 
 print("Number of features generated:", len(features_list))
 ```
