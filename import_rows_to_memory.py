@@ -24,15 +24,6 @@ try:
     #select_query = "SELECT valueAtTimestamp(trip, '"+range.end().toString("yyyy-MM-dd HH:mm:ss-04")+"') FROM trips_test"
     cursor.execute(select_query)
     rows = cursor.fetchall()
-    #print(rows)
-    # Print the obtained rows and call a method on the instances
-#    for row in rows:
-#        #print("point =", row[0])
-#        if not row[0]:
-#            print("")
-#        else:
-#            print("startTimestamp =", row[0].startTimestamp, "\n")
-#            #row[0].valueAtTimestamp(dtrange.end())
 
 except (Exception, psycopg2.Error) as error:
     print("Error while connecting to PostgreSQL", error)
